@@ -1,0 +1,5 @@
+Display.SelectFolder Description: $'''Select the location of eStatement files''' InitialDirectory: DefaultFolder IsTopMost: False SelectedFolder=> SelectedFolder ButtonPressed=> ConfirmSelectedFolder
+IF ConfirmSelectedFolder <> $'''OK''' THEN
+    EXIT Code: 0
+END
+SET WorkDir TO SelectedFolder

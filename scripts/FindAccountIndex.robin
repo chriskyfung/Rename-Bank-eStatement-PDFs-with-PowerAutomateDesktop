@@ -1,0 +1,8 @@
+Variables.FindOrReplaceInDataTable.FindItemInDataTableByColumnIndex DataTable: AccountTable AllMatches: False ValueToFind: MatchedAccountNumber MatchCase: False MatchEntireCellContents: True ColumnNameOrIndex: $'''AccountNumber''' DataTableMatches=> DataTableMatches
+IF IsEmpty(DataTableMatches) THEN
+    Display.ShowMessageDialog.ShowMessage Title: $'''Invalid PDF file''' Message: $'''Cannot read any registered account code from 
+%CurrentFile.FullName%''' Icon: Display.Icon.Warning Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: True ButtonPressed=> ConfirmWarning
+    SET AccountIndex TO -1
+    EXIT FUNCTION
+END
+Text.ToNumber Text: DataTableMatches[0]['Row'] Number=> AccountIndex

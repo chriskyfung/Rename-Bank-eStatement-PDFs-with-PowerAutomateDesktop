@@ -1,0 +1,33 @@
+/# User-defined data and variables:
+- AccountTable: The data table to specify all accounts' label, account number, and regular expression for date prasing
+- DefaultWorkDir: The default path of a folder where the eStatement files locate
+- GlobPattern: The glob pattern to filter the PDF eStatement files#/
+Variables.CreateNewDatatable InputTable: { ^['Label', 'AccountNumber', 'DateRegEx'], [$'''Saving''', $'''000-123456-789''', $'''\\d{2}\\s\\w{3}\\s\\d{4}'''], [$'''Mastercard''', $'''0000 0000 0000 0000''', $'''\\d{2}\\s\\w{3}\\s\\d{4}'''], [$'''Security''', $'''000-123456-010''', $'''\\d{2}\\w{3}\\d{4}'''] } DataTable=> AccountTable
+SET DefaultFolder TO $'''D:\\'''
+SET GlobPattern TO $'''eStatementFile*.pdf'''
+# Generate the regular expression pattern for identifying account codes
+Variables.RetrieveDataTableColumnIntoList DataTable: AccountTable ColumnNameOrIndex: $'''AccountNumber''' ColumnAsList=> AccountNumberList
+Text.JoinText.JoinWithCustomDelimiter List: AccountNumberList CustomDelimiter: $'''|''' Result=> JoinedAccountNumbers
+# Loop through the PDF files found in the selected folder
+CALL ConfirmWorkDir
+CALL ConfirmGlobPattern
+Folder.GetFiles Folder: WorkDir FileFilter: GlobPattern IncludeSubfolders: False FailOnAccessDenied: True SortBy1: Folder.SortBy.Name SortDescending1: False SortBy2: Folder.SortBy.NoSort SortDescending2: False SortBy3: Folder.SortBy.NoSort SortDescending3: False Files=> Files
+LOOP FOREACH CurrentFile IN Files
+    Pdf.ExtractTextFromPDF.ExtractTextFromPageRange PDFFile: CurrentFile FromPageNumber: 1 ToPageNumber: 1 DetectLayout: True ExtractedText=> ExtractedPDFText
+    # Determine the account type by parsing the account code in the text extracted from PDF
+    Text.ParseText.RegexParseForFirstOccurrence Text: ExtractedPDFText TextToFind: $'''(%JoinedAccountNumbers%)''' StartingPosition: 0 IgnoreCase: False OccurrencePosition=> Position Match=> MatchedAccountNumber
+    CALL FindAccountIndex
+    # Skip the rest in the loop if AccountIndex < 0
+    IF AccountIndex < 0 THEN
+        NEXT LOOP
+    END
+    # For AccountIndex => 0
+    SET AccountLabel TO AccountTable[AccountIndex]['Label']
+    CALL ParseStatementDate
+    Text.ConvertDateTimeToText.FromCustomDateTime DateTime: StatementDate CustomFormat: $'''yyyy-MM''' Result=> FormattedStatementDate
+    # Output extracted text (Dry run)
+    File.WriteText File: $'''%CurrentFile.Directory%\\%FormattedStatementDate%_%AccountLabel%.txt''' TextToWrite: ExtractedPDFText AppendNewLine: True IfFileExists: File.IfFileExists.Overwrite Encoding: File.FileEncoding.Unicode
+    # Rename PDF File (Apply change)
+    File.RenameFiles.Rename Files: CurrentFile NewName: $'''%FormattedStatementDate%_%AccountLabel%''' KeepExtension: True IfFileExists: File.IfExists.DoNothing RenamedFiles=> RenamedFiles
+END
+Display.ShowMessageDialog.ShowMessage Title: $'''Power Automate Workflow''' Message: $'''Finished renaming eStatement PDFs in %WorkDir%''' Icon: Display.Icon.Information Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ConfirmFinished

@@ -1,0 +1,5 @@
+Display.InputDialog Title: $'''File Name Pattern''' Message: $'''Please confirm the glob pattern for filtering the eStatement files''' DefaultValue: GlobPattern InputType: Display.InputType.SingleLine IsTopMost: False UserInput=> UserGlobPattern ButtonPressed=> ConfirmGlobPattern
+IF ConfirmGlobPattern <> $'''OK''' THEN
+    EXIT Code: 0
+END
+SET GlobPattern TO UserGlobPattern

@@ -1,0 +1,3 @@
+SET DateRegEx TO AccountTable[AccountIndex]['DateRegEx']
+Text.ParseText.RegexParseForFirstOccurrence Text: ExtractedPDFText TextToFind: DateRegEx StartingPosition: 0 IgnoreCase: False OccurrencePosition=> DatePosition Match=> ExtractedDate
+Text.ConvertTextToDateTime.ToDateTime Text: ExtractedDate DateTime=> StatementDate
